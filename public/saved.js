@@ -1,35 +1,55 @@
-// Check auth - redirect to login if not logged in
-const userId = sessionStorage.getItem("userId");
-if (!userId) {
-  window.location.href = "login.html";
-}
-
-const STORAGE_KEY = "savedCharities";
-
-function getStorageKey() {
-  return `${STORAGE_KEY}_${userId}`;
-}
-
-function getSavedCharities() {
-  try {
-    const raw = localStorage.getItem(getStorageKey());
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveCharities(list) {
-  localStorage.setItem(getStorageKey(), JSON.stringify(list));
-}
+// Saved charities page — loads and manages charities from Firestore
+import { auth, db, onAuthStateChanged } from "./firebase-config.js";
+import { signOut } from "https://www.gstatic.com/firebasejs/11.3.0/firebase-auth.js";
+import {
+  collection, getDocs, deleteDoc, doc
+} from "https://www.gstatic.com/firebasejs/11.3.0/firebase-firestore.js";
 
 const savedCharitiesList = document.getElementById("savedCharitiesList");
 const emptyState = document.getElementById("emptyState");
 
-function renderSavedCharities() {
-  const saved = getSavedCharities();
+// ── Auth guard — wait for auth state before loading data ──
 
-  if (saved.length === 0) {
+onAuthStateChanged(auth, (user) => {
+  if (!user) {
+    window.location.href = "login.html";
+  } else {
+    sessionStorage.setItem("userId", user.uid);
+    loadSavedCharities(user.uid);
+  }
+});
+
+// ── Logout ──
+
+document.getElementById("logoutBtn").addEventListener("click", async () => {
+  await signOut(auth);
+  sessionStorage.removeItem("userId");
+  window.location.href = "login.html";
+});
+
+// ── Load saved charities from Firestore ──
+
+async function loadSavedCharities(userId) {
+  try {
+    const savedRef = collection(db, "users", userId, "savedCharities");
+    const snapshot = await getDocs(savedRef);
+
+    const charities = snapshot.docs.map(d => ({
+      docId: d.id,
+      ...d.data()
+    }));
+
+    renderSavedCharities(charities, userId);
+  } catch (error) {
+    console.error("Failed to load saved charities:", error);
+    savedCharitiesList.innerHTML = '<p class="loading-error">Failed to load your saved charities. Please try again.</p>';
+  }
+}
+
+// ── Render saved charity cards ──
+
+function renderSavedCharities(charities, userId) {
+  if (charities.length === 0) {
     savedCharitiesList.innerHTML = "";
     savedCharitiesList.style.display = "none";
     emptyState.style.display = "block";
@@ -40,26 +60,32 @@ function renderSavedCharities() {
   savedCharitiesList.style.display = "grid";
   savedCharitiesList.innerHTML = "";
 
-  saved.forEach((c, index) => {
+  charities.forEach(c => {
     const card = document.createElement("div");
     card.className = "charity-card";
     card.innerHTML = `
       <h3>${c.name}</h3>
       <p>${c.mission}</p>
       <a href="${c.url}" target="_blank" rel="noopener" class="charity-link">${c.url}</a>
-      ${c.score != null ? `<strong>Match: ${(c.score * 100).toFixed(1)}%</strong>` : ""}
-      <button type="button" class="btn-save btn-remove" data-index="${index}">Remove</button>
+      <button type="button" class="btn-save btn-remove">Remove</button>
     `;
 
-    card.querySelector(".btn-remove").addEventListener("click", () => {
-      const list = getSavedCharities();
-      list.splice(index, 1);
-      saveCharities(list);
-      renderSavedCharities();
+    // Remove charity from Firestore on click
+    card.querySelector(".btn-remove").addEventListener("click", async () => {
+      try {
+        await deleteDoc(doc(db, "users", userId, "savedCharities", c.docId));
+        card.remove();
+
+        // Show empty state if no charities left
+        if (savedCharitiesList.children.length === 0) {
+          savedCharitiesList.style.display = "none";
+          emptyState.style.display = "block";
+        }
+      } catch (error) {
+        console.error("Failed to remove charity:", error);
+      }
     });
 
     savedCharitiesList.appendChild(card);
   });
 }
-
-renderSavedCharities();
