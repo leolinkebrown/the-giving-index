@@ -2,7 +2,7 @@
 import { auth, db, onAuthStateChanged } from "./firebase-config.js";
 import { signOut } from "https://www.gstatic.com/firebasejs/11.3.0/firebase-auth.js";
 import {
-  collection, addDoc, getDocs, deleteDoc, doc, query, where, serverTimestamp
+  collection, addDoc, getDocs, deleteDoc, doc, query, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/11.3.0/firebase-firestore.js";
 
 // NLP backend URL — update to Render URL after deployment (Task 11)
@@ -76,17 +76,20 @@ addValueBtn.addEventListener("click", () => {
 
   if (!value) {
     errorMessage.textContent = "Please enter a value";
+    errorMessage.classList.add("show");
     return;
   }
 
   if (userValues.includes(value)) {
     errorMessage.textContent = "Value already added";
+    errorMessage.classList.add("show");
     return;
   }
 
   userValues.push(value);
   valueInput.value = "";
   errorMessage.textContent = "";
+  errorMessage.classList.remove("show");
 
   renderValues();
   proceedToRanking.disabled = userValues.length < 2;
