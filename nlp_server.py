@@ -12,7 +12,7 @@ app = Flask(__name__)
 CORS(app)
 
 # Hugging Face Inference API configuration
-HF_API_TOKEN = os.environ.get("HF_API_TOKEN", "")
+HF_API_TOKEN = os.environ.get("charity_token", "")
 HF_MODEL_URL = "https://api-inference.huggingface.co/pipeline/feature-extraction/sentence-transformers/all-MiniLM-L6-v2"
 
 
