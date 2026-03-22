@@ -68,6 +68,29 @@ def health():
     return jsonify({"status": "ok"})
 
 
+@app.route("/debug", methods=["GET"])
+def debug():
+    """Debug endpoint to test HF API connection."""
+    token_preview = HF_API_TOKEN[:8] + "..." if len(HF_API_TOKEN) > 8 else "(empty)"
+    try:
+        headers = {"Authorization": f"Bearer {HF_API_TOKEN}"}
+        response = requests.post(HF_MODEL_URL, headers=headers, json={
+            "inputs": "test",
+            "options": {"wait_for_model": True}
+        })
+        return jsonify({
+            "token_preview": token_preview,
+            "hf_status_code": response.status_code,
+            "hf_response_type": str(type(response.json())),
+            "hf_response_preview": str(response.json())[:500]
+        })
+    except Exception as e:
+        return jsonify({
+            "token_preview": token_preview,
+            "error": str(e)
+        })
+
+
 if __name__ == "__main__":
     # Use PORT env var for Render; default to 5000 for local development
     port = int(os.environ.get("PORT", 5000))
