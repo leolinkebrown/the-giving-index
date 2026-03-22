@@ -11,6 +11,7 @@ app = Flask(__name__)
 CORS(app)
 
 # Load the sentence transformer model (runs once at startup)
+# Using convert_to_numpy instead of tensors to reduce memory usage
 model = SentenceTransformer("all-MiniLM-L6-v2")
 
 
@@ -28,12 +29,19 @@ def similarity():
     # Combine keywords into a single text for encoding
     keyword_text = " ".join(keywords)
 
-    keyword_embedding = model.encode(keyword_text, convert_to_tensor=True)
-    mission_embedding = model.encode(mission, convert_to_tensor=True)
+    # Use numpy arrays instead of tensors to save memory
+    keyword_embedding = model.encode(keyword_text, convert_to_tensor=False)
+    mission_embedding = model.encode(mission, convert_to_tensor=False)
 
     score = util.cos_sim(keyword_embedding, mission_embedding).item()
 
     return jsonify({"similarity": float(score)})
+
+
+@app.route("/", methods=["GET"])
+def health():
+    """Health check endpoint."""
+    return jsonify({"status": "ok"})
 
 
 if __name__ == "__main__":
