@@ -1,21 +1,38 @@
 # NLP similarity backend for The Giving Index
-# Uses TF-IDF vectorization and cosine similarity to match
-# user keywords against charity mission statements
+# Uses Hugging Face Inference API to encode text with all-MiniLM-L6-v2
+# and computes cosine similarity between user keywords and charity missions
 
 import os
-from flask import Flask, request, jsonify
+import requests
+import numpy as np
+from flask import Flask, request as flask_request, jsonify
 from flask_cors import CORS
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
 
 app = Flask(__name__)
 CORS(app)
 
+# Hugging Face Inference API configuration
+HF_API_TOKEN = os.environ.get("HF_API_TOKEN", "")
+HF_MODEL_URL = "https://api-inference.huggingface.co/pipeline/feature-extraction/sentence-transformers/all-MiniLM-L6-v2"
+
+
+def get_embedding(text):
+    """Get sentence embedding from Hugging Face Inference API."""
+    headers = {"Authorization": f"Bearer {HF_API_TOKEN}"}
+    response = requests.post(HF_MODEL_URL, headers=headers, json={"inputs": text})
+    response.raise_for_status()
+    return np.array(response.json())
+
+
+def cosine_sim(a, b):
+    """Compute cosine similarity between two vectors."""
+    return float(np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b)))
+
 
 @app.route("/similarity", methods=["POST"])
 def similarity():
-    """Calculate cosine similarity between user keywords and a charity mission."""
-    data = request.get_json()
+    """Calculate semantic similarity between user keywords and a charity mission."""
+    data = flask_request.get_json()
 
     keywords = data.get("keywords", [])
     mission = data.get("mission", "")
@@ -23,15 +40,17 @@ def similarity():
     if not keywords or not mission:
         return jsonify({"similarity": 0.0})
 
-    # Combine keywords into a single text for comparison
+    # Combine keywords into a single text for encoding
     keyword_text = " ".join(keywords)
 
-    # Vectorize both texts using TF-IDF and compute cosine similarity
-    vectorizer = TfidfVectorizer()
-    tfidf_matrix = vectorizer.fit_transform([keyword_text, mission])
-    score = cosine_similarity(tfidf_matrix[0:1], tfidf_matrix[1:2])[0][0]
-
-    return jsonify({"similarity": float(score)})
+    try:
+        keyword_embedding = get_embedding(keyword_text)
+        mission_embedding = get_embedding(mission)
+        score = cosine_sim(keyword_embedding, mission_embedding)
+        return jsonify({"similarity": score})
+    except Exception as e:
+        print(f"HF API error: {e}")
+        return jsonify({"similarity": 0.0})
 
 
 @app.route("/", methods=["GET"])
