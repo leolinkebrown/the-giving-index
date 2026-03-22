@@ -5,8 +5,9 @@ import {
   collection, addDoc, getDocs, deleteDoc, doc, query, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/11.3.0/firebase-firestore.js";
 
-// NLP backend URL — update to Render URL after deployment (Task 11)
-const API_URL = "http://127.0.0.1:5000/similarity";
+// NLP backend URL — switch to localhost for local development
+// const API_URL = "http://127.0.0.1:5000/similarity";
+const API_URL = "https://the-giving-index.onrender.com/similarity";
 
 let userValues = [];
 let charities = [];
