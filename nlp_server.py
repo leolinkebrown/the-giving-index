@@ -1,18 +1,15 @@
 # NLP similarity backend for The Giving Index
-# Encodes user keywords and charity missions using sentence-transformers
-# and returns cosine similarity scores
+# Uses TF-IDF vectorization and cosine similarity to match
+# user keywords against charity mission statements
 
 import os
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from sentence_transformers import SentenceTransformer, util
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
 
 app = Flask(__name__)
 CORS(app)
-
-# Load the sentence transformer model (runs once at startup)
-# Using convert_to_numpy instead of tensors to reduce memory usage
-model = SentenceTransformer("all-MiniLM-L6-v2")
 
 
 @app.route("/similarity", methods=["POST"])
@@ -26,14 +23,13 @@ def similarity():
     if not keywords or not mission:
         return jsonify({"similarity": 0.0})
 
-    # Combine keywords into a single text for encoding
+    # Combine keywords into a single text for comparison
     keyword_text = " ".join(keywords)
 
-    # Use numpy arrays instead of tensors to save memory
-    keyword_embedding = model.encode(keyword_text, convert_to_tensor=False)
-    mission_embedding = model.encode(mission, convert_to_tensor=False)
-
-    score = util.cos_sim(keyword_embedding, mission_embedding).item()
+    # Vectorize both texts using TF-IDF and compute cosine similarity
+    vectorizer = TfidfVectorizer()
+    tfidf_matrix = vectorizer.fit_transform([keyword_text, mission])
+    score = cosine_similarity(tfidf_matrix[0:1], tfidf_matrix[1:2])[0][0]
 
     return jsonify({"similarity": float(score)})
 
