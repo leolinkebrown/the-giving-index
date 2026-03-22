@@ -19,9 +19,18 @@ HF_MODEL_URL = "https://api-inference.huggingface.co/pipeline/feature-extraction
 def get_embedding(text):
     """Get sentence embedding from Hugging Face Inference API."""
     headers = {"Authorization": f"Bearer {HF_API_TOKEN}"}
-    response = requests.post(HF_MODEL_URL, headers=headers, json={"inputs": text})
+    response = requests.post(HF_MODEL_URL, headers=headers, json={
+        "inputs": text,
+        "options": {"wait_for_model": True}
+    })
     response.raise_for_status()
-    return np.array(response.json())
+    result = np.array(response.json())
+
+    # HF returns token-level embeddings (2D array) — mean pool to get sentence vector
+    if result.ndim == 2:
+        result = result.mean(axis=0)
+
+    return result
 
 
 def cosine_sim(a, b):
