@@ -81,8 +81,9 @@ def debug():
         return jsonify({
             "token_preview": token_preview,
             "hf_status_code": response.status_code,
-            "hf_response_type": str(type(response.json())),
-            "hf_response_preview": str(response.json())[:500]
+            "hf_url": HF_MODEL_URL,
+            "hf_raw_response": response.text[:1000],
+            "hf_content_type": response.headers.get("content-type", "unknown")
         })
     except Exception as e:
         return jsonify({
