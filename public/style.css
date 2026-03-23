@@ -379,10 +379,23 @@ body {
     display: inline-block;
     margin-top: 0.75rem;
     padding: 0.375rem 0.75rem;
-    background: rgba(16, 185, 129, 0.1);
-    color: var(--secondary);
     font-weight: 600;
     font-size: 0.85rem;
+}
+
+.match-green {
+    background: rgba(16, 185, 129, 0.1);
+    color: #059669;
+}
+
+.match-yellow {
+    background: rgba(234, 179, 8, 0.1);
+    color: #b45309;
+}
+
+.match-red {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--danger);
 }
 
 /* ── Save / Remove Buttons ── */
