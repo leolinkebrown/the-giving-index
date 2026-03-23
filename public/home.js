@@ -249,13 +249,14 @@ function showMoreResults() {
     card.className = "charity-card";
 
     const pct = c.score * 100;
-    const colorClass = c.score >= 0.4 ? "match-green" : c.score >= 0.2 ? "match-yellow" : "match-red";
+    const matchColor = c.score >= 0.4 ? "#059669" : c.score >= 0.2 ? "#b45309" : "#ef4444";
+    const matchBg = c.score >= 0.4 ? "rgba(16,185,129,0.15)" : c.score >= 0.2 ? "rgba(234,179,8,0.15)" : "rgba(239,68,68,0.15)";
 
     card.innerHTML = `
       <h3>${c.name}</h3>
       <p>${c.mission}</p>
       <a href="${c.url}" target="_blank" rel="noopener" class="charity-link">${c.url}</a>
-      <strong class="match-score ${colorClass}">Match: ${pct.toFixed(1)}%</strong>
+      <strong class="match-score" style="color:${matchColor};background:${matchBg}">Match: ${pct.toFixed(1)}%</strong>
       <button type="button" class="btn-save">Add to My Charities</button>
     `;
 
