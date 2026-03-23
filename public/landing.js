@@ -1,4 +1,24 @@
-// Landing page — loads and displays featured charities from the database
+// Landing page — auth guard, logout, and featured charities
+import { auth, onAuthStateChanged } from "./firebase-config.js";
+import { signOut } from "https://www.gstatic.com/firebasejs/11.3.0/firebase-auth.js";
+
+// ── Auth guard — redirect to login if not authenticated ──
+
+onAuthStateChanged(auth, (user) => {
+  if (!user) {
+    window.location.href = "login.html";
+  }
+});
+
+// ── Logout ──
+
+document.getElementById("logoutBtn").addEventListener("click", async () => {
+  await signOut(auth);
+  sessionStorage.removeItem("userId");
+  window.location.href = "login.html";
+});
+
+// ── Load and display featured charities ──
 
 async function loadFeaturedCharities() {
   try {

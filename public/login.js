@@ -101,7 +101,7 @@ loginForm.addEventListener("submit", async (e) => {
 
     const user = userCredential.user;
     sessionStorage.setItem("userId", user.uid);
-    window.location.href = "landing.html";
+    window.location.href = "index.html";
   } catch (error) {
     setLoading(false);
 

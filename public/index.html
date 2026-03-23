@@ -11,59 +11,47 @@
 </head>
 <body>
     <div class="container">
-        <header class="hero">
+        <!-- Hero section with site title, nav, and call to action -->
+        <header class="landing-hero">
             <div class="hero-nav">
                 <a href="home.html" class="btn-outline btn-small">My Saved Charities</a>
                 <button id="logoutBtn" class="btn-outline btn-small">Log Out</button>
             </div>
-            <h1 class="hero-title"><a href="landing.html" class="hero-title-link">The Giving Index</a></h1>
-            <p class="hero-subtitle">Tell us what matters to you, and we'll connect you with causes that align with your values</p>
+            <h1 class="hero-title">The Giving Index</h1>
+            <p class="hero-subtitle">Discover charities that align with your personal values using AI-powered semantic matching</p>
+            <a href="find.html" class="btn-primary">Get Started</a>
         </header>
 
-        
-        <section id="step1" class="step active">
-            <div class="step-header">
-                <span class="step-number">01</span>
-                <h2>What values matter to you?</h2>
-                <p>Add the causes and values that are important to you</p>
-            </div>
-            <div class="input-section">
-                <div class="input-group">
-                    <input type="text" id="valueInput" placeholder="e.g., Education, Healthcare, Environment..." class="value-input">
-                    <button id="addValueBtn" class="btn-primary">Add Value</button>
+        <!-- About section explaining how the app works -->
+        <section class="landing-about">
+            <h2>How It Works</h2>
+            <p>The Giving Index uses natural language processing to match you with charities based on what matters most to you. Simply tell us your values, rank them by importance, and our AI finds the charities whose missions align with your priorities.</p>
+            <div class="how-it-works">
+                <div class="how-step">
+                    <span class="step-number">01</span>
+                    <h3>Enter Your Values</h3>
+                    <p>Tell us the causes and values that matter to you</p>
                 </div>
-                <div id="errorMessage" class="error-message"></div>
-                <div id="valuesList" class="values-list"></div>
-            </div>
-            <button id="proceedToRanking" class="btn-secondary" disabled>Continue to Ranking →</button>
-        </section>
-
-        
-        <section id="step2" class="step">
-            <div class="step-header">
-                <span class="step-number">02</span>
-                <h2>Rank your values</h2>
-                <p>Drag and drop to prioritize what matters most to you</p>
-            </div>
-            <div id="rankingList" class="ranking-list"></div>
-            <div class="button-group">
-                <button id="backToInput" class="btn-outline">← Back</button>
-                <button id="findCharities" class="btn-primary" disabled>Find My Charities →</button>
+                <div class="how-step">
+                    <span class="step-number">02</span>
+                    <h3>Rank Them</h3>
+                    <p>Drag and drop to prioritize what's most important</p>
+                </div>
+                <div class="how-step">
+                    <span class="step-number">03</span>
+                    <h3>Get Matched</h3>
+                    <p>See charities ranked by how well they match your values</p>
+                </div>
             </div>
         </section>
 
-        
-        <section id="step3" class="step">
-            <div class="step-header">
-                <span class="step-number">03</span>
-                <h2>Your Matched Charities</h2>
-                <p>Based on your values, here are charities that align with your priorities</p>
-            </div>
-            <div id="charitiesList" class="charities-list"></div>
-            <button id="startOver" class="btn-outline">Start Over</button>
+        <!-- Featured charities loaded from the database -->
+        <section class="featured-section">
+            <h2>Featured Charities</h2>
+            <div id="featuredCharities" class="charities-list"></div>
         </section>
     </div>
 
-    <script type="module" src="home.js"></script>
+    <script type="module" src="landing.js"></script>
 </body>
 </html>
