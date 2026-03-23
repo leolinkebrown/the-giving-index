@@ -248,11 +248,14 @@ function showMoreResults() {
     const card = document.createElement("div");
     card.className = "charity-card";
 
+    const pct = c.score * 100;
+    const colorClass = c.score >= 0.4 ? "match-green" : c.score >= 0.2 ? "match-yellow" : "match-red";
+
     card.innerHTML = `
       <h3>${c.name}</h3>
       <p>${c.mission}</p>
       <a href="${c.url}" target="_blank" rel="noopener" class="charity-link">${c.url}</a>
-      <strong class="match-score ${c.score >= 0.4 ? 'match-green' : c.score >= 0.2 ? 'match-yellow' : 'match-red'}">Match: ${(c.score * 100).toFixed(1)}%</strong>
+      <strong class="match-score ${colorClass}">Match: ${pct.toFixed(1)}%</strong>
       <button type="button" class="btn-save">Add to My Charities</button>
     `;
 
