@@ -708,10 +708,13 @@ body {
 .hero-title-link {
     color: inherit;
     text-decoration: none;
+    cursor: pointer;
+    display: inline-block;
 }
 
 .hero-title-link:hover {
     opacity: 0.85;
+    text-decoration: underline;
 }
 
 /* ── Responsive ── */
