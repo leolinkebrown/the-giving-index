@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Giving Index</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <!-- Hero section with site title and call to action -->
+        <header class="landing-hero">
+            <h1 class="hero-title">The Giving Index</h1>
+            <p class="hero-subtitle">Discover charities that align with your personal values using AI-powered semantic matching</p>
+            <a href="index.html" class="btn-primary">Get Started</a>
+        </header>
+
+        <!-- About section explaining how the app works -->
+        <section class="landing-about">
+            <h2>How It Works</h2>
+            <p>The Giving Index uses natural language processing to match you with charities based on what matters most to you. Simply tell us your values, rank them by importance, and our AI finds the charities whose missions align with your priorities.</p>
+            <div class="how-it-works">
+                <div class="how-step">
+                    <span class="step-number">01</span>
+                    <h3>Enter Your Values</h3>
+                    <p>Tell us the causes and values that matter to you</p>
+                </div>
+                <div class="how-step">
+                    <span class="step-number">02</span>
+                    <h3>Rank Them</h3>
+                    <p>Drag and drop to prioritize what's most important</p>
+                </div>
+                <div class="how-step">
+                    <span class="step-number">03</span>
+                    <h3>Get Matched</h3>
+                    <p>See charities ranked by how well they match your values</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Featured charities loaded from the database -->
+        <section class="featured-section">
+            <h2>Featured Charities</h2>
+            <div id="featuredCharities" class="charities-list"></div>
+        </section>
+    </div>
+
+    <script type="module" src="landing.js"></script>
+</body>
+</html>

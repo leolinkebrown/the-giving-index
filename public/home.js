@@ -106,10 +106,18 @@ valueInput.addEventListener("keydown", (e) => {
 
 function renderValues() {
   valuesList.innerHTML = "";
-  userValues.forEach(v => {
+  userValues.forEach((v, index) => {
     const tag = document.createElement("span");
     tag.className = "value-tag";
-    tag.textContent = v;
+    tag.innerHTML = `${v}<button type="button" class="remove-value" aria-label="Remove ${v}">&times;</button>`;
+
+    // Remove value on x click
+    tag.querySelector(".remove-value").addEventListener("click", () => {
+      userValues.splice(index, 1);
+      renderValues();
+      proceedToRanking.disabled = userValues.length < 2;
+    });
+
     valuesList.appendChild(tag);
   });
 }
