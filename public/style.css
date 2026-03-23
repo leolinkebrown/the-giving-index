@@ -383,19 +383,19 @@ body {
     font-size: 0.85rem;
 }
 
-.match-green {
-    background: rgba(16, 185, 129, 0.1);
+.match-score.match-green {
+    background: rgba(16, 185, 129, 0.15);
     color: #059669;
 }
 
-.match-yellow {
-    background: rgba(234, 179, 8, 0.1);
+.match-score.match-yellow {
+    background: rgba(234, 179, 8, 0.15);
     color: #b45309;
 }
 
-.match-red {
-    background: rgba(239, 68, 68, 0.1);
-    color: var(--danger);
+.match-score.match-red {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
 }
 
 /* ── Save / Remove Buttons ── */
