@@ -13,7 +13,7 @@ CORS(app)
 
 # Hugging Face Inference API configuration
 HF_API_TOKEN = os.environ.get("charity_token", "")
-HF_MODEL_URL = "https://router.huggingface.co/pipeline/feature-extraction/sentence-transformers/all-MiniLM-L6-v2"
+HF_MODEL_URL = "https://router.huggingface.co/hf-inference/models/sentence-transformers/all-MiniLM-L6-v2"
 
 
 def get_embedding(text):
