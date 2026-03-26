@@ -29,6 +29,29 @@ def get_similarity(source_sentence, sentences):
     return response.json()
 
 
+def weighted_similarity(keywords, mission):
+    """Compute weighted average similarity between ranked keywords and a mission.
+
+    Each keyword is scored individually against the mission, then combined
+    using position-based weights so higher-ranked values count more.
+    """
+    if not keywords or not mission:
+        return 0.0
+
+    total_weight = sum(k["weight"] for k in keywords)
+    if total_weight == 0:
+        return 0.0
+
+    weighted_sum = 0.0
+    for kw in keywords:
+        # Score each keyword individually against the mission
+        scores = get_similarity(kw["word"], [mission])
+        score = scores[0] if isinstance(scores, list) and len(scores) > 0 else 0.0
+        weighted_sum += kw["weight"] * float(score)
+
+    return weighted_sum / total_weight
+
+
 @app.route("/similarity", methods=["POST"])
 def similarity():
     """Calculate semantic similarity between user keywords and a charity mission."""
@@ -40,41 +63,51 @@ def similarity():
     if not keywords or not mission:
         return jsonify({"similarity": 0.0})
 
-    # Combine keywords into a single text
-    keyword_text = " ".join(keywords)
-
     try:
-        # HF sentence-similarity returns an array of scores
-        scores = get_similarity(keyword_text, [mission])
-        score = scores[0] if isinstance(scores, list) and len(scores) > 0 else 0.0
-        return jsonify({"similarity": float(score)})
+        # Support both old format (string array) and new format (object array)
+        if isinstance(keywords[0], str):
+            keyword_text = " ".join(keywords)
+            scores = get_similarity(keyword_text, [mission])
+            score = scores[0] if isinstance(scores, list) and len(scores) > 0 else 0.0
+            return jsonify({"similarity": float(score)})
+        else:
+            score = weighted_similarity(keywords, mission)
+            return jsonify({"similarity": score})
     except Exception as e:
         print(f"HF API error: {e}")
         return jsonify({"similarity": 0.0})
+
+
+@app.route("/batch-similarity", methods=["POST"])
+def batch_similarity():
+    """Calculate weighted similarity for multiple missions in one request.
+
+    Accepts all charity missions at once and returns a score for each,
+    avoiding 100 separate round-trip requests from the frontend.
+    """
+    data = flask_request.get_json()
+
+    keywords = data.get("keywords", [])
+    missions = data.get("missions", [])
+
+    if not keywords or not missions:
+        return jsonify({"scores": [0.0] * len(missions)})
+
+    try:
+        scores = []
+        for mission in missions:
+            score = weighted_similarity(keywords, mission)
+            scores.append(score)
+        return jsonify({"scores": scores})
+    except Exception as e:
+        print(f"HF API error: {e}")
+        return jsonify({"scores": [0.0] * len(missions)})
 
 
 @app.route("/", methods=["GET"])
 def health():
     """Health check endpoint."""
     return jsonify({"status": "ok"})
-
-
-@app.route("/debug", methods=["GET"])
-def debug():
-    """Debug endpoint to test HF API connection."""
-    token_preview = HF_API_TOKEN[:8] + "..." if len(HF_API_TOKEN) > 8 else "(empty)"
-    try:
-        scores = get_similarity("education children", ["Providing education to underprivileged children"])
-        return jsonify({
-            "token_preview": token_preview,
-            "test_score": scores,
-            "status": "working"
-        })
-    except Exception as e:
-        return jsonify({
-            "token_preview": token_preview,
-            "error": str(e)
-        })
 
 
 if __name__ == "__main__":

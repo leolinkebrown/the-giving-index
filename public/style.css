@@ -638,6 +638,27 @@ body {
     text-decoration: underline;
 }
 
+/* ── Search Section ── */
+
+.search-section {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    padding: 1.25rem 1.75rem;
+    margin-bottom: 2rem;
+}
+
+.search-results {
+    margin-top: 1rem;
+    display: none;
+}
+
+.search-empty {
+    text-align: center;
+    color: var(--text-muted);
+    padding: 1rem;
+    font-size: 0.95rem;
+}
+
 /* ── Landing Page ── */
 
 .landing-hero {

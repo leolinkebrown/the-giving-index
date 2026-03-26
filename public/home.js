@@ -5,14 +5,21 @@ import {
   collection, addDoc, getDocs, deleteDoc, doc, query, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/11.3.0/firebase-firestore.js";
 
-// NLP backend URL — switch to localhost for local development
-// const API_URL = "http://127.0.0.1:5000/similarity";
-const API_URL = "https://the-giving-index.onrender.com/similarity";
+// TF-IDF module for client-side fallback and hybrid scoring
+import { buildCorpusIndex, tfidfBatchScore } from "./tfidf.js";
+
+// Levenshtein search module for fuzzy charity search
+import { searchCharities } from "./search.js";
+
+// NLP backend URL, switch to localhost for local development
+// const BATCH_API_URL = "http://127.0.0.1:5000/batch-similarity";
+const BATCH_API_URL = "https://the-giving-index.onrender.com/batch-similarity";
 
 let userValues = [];
 let charities = [];
 let currentResults = [];
 let visibleCount = 0;
+let corpusIndex = null;
 const PAGE_SIZE = 10;
 
 // ── DOM elements ──
@@ -56,6 +63,8 @@ async function loadCharities() {
   try {
     const response = await fetch("./charitydatabase.json");
     charities = await response.json();
+    // Precompute TF-IDF corpus index for client-side scoring
+    corpusIndex = buildCorpusIndex(charities);
   } catch (error) {
     console.error("Failed to load charity data:", error);
   }
@@ -203,26 +212,33 @@ findCharitiesBtn.addEventListener("click", async () => {
 
   const weightedKeywords = getWeightedKeywords();
 
-  try {
-    const results = [];
-    for (const charity of charities) {
-      // Per-request timeout of 30 seconds (handles Render cold starts)
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 30000);
+  // Compute client-side TF-IDF scores for all charities
+  const tfidfScores = corpusIndex
+    ? tfidfBatchScore(weightedKeywords, corpusIndex)
+    : charities.map(() => 0);
 
-      const response = await fetch(API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          keywords: weightedKeywords.map(k => k.word),
-          mission: charity.mission
-        }),
-        signal: controller.signal
-      });
-      clearTimeout(timeout);
-      const data = await response.json();
-      results.push({ ...charity, score: data.similarity });
-    }
+  try {
+    // Send all missions in one batch request with weighted keywords
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 60000);
+
+    const response = await fetch(BATCH_API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        keywords: weightedKeywords,
+        missions: charities.map(c => c.mission)
+      }),
+      signal: controller.signal
+    });
+    clearTimeout(timeout);
+    const data = await response.json();
+
+    // Blend NLP semantic scores (70%) with TF-IDF lexical scores (30%)
+    const results = charities.map((charity, i) => ({
+      ...charity,
+      score: 0.7 * (data.scores[i] || 0) + 0.3 * tfidfScores[i]
+    }));
 
     results.sort((a, b) => b.score - a.score);
 
@@ -232,11 +248,20 @@ findCharitiesBtn.addEventListener("click", async () => {
     charitiesList.innerHTML = "";
     showMoreResults();
   } catch (error) {
-    if (error.name === "AbortError") {
-      charitiesList.innerHTML = '<div class="loading-error"><p>The server took too long to respond. It may be starting up — please try again in a moment.</p></div>';
-    } else {
-      charitiesList.innerHTML = '<div class="loading-error"><p>Something went wrong connecting to the matching service. Please check your connection and try again.</p></div>';
-    }
+    // If the API fails, fall back to TF-IDF only so the app still works
+    console.warn("NLP API unavailable, using TF-IDF fallback:", error.message);
+
+    const results = charities.map((charity, i) => ({
+      ...charity,
+      score: tfidfScores[i]
+    }));
+
+    results.sort((a, b) => b.score - a.score);
+
+    currentResults = results;
+    visibleCount = 0;
+    charitiesList.innerHTML = "";
+    showMoreResults();
   }
 });
 
@@ -328,4 +353,58 @@ document.getElementById("startOver").addEventListener("click", () => {
   if (seeMoreBtn) seeMoreBtn.remove();
 
   showStep(step1);
+});
+
+// ── Quick Search — fuzzy charity search with Levenshtein distance ──
+
+const searchInput = document.getElementById("searchInput");
+const searchResults = document.getElementById("searchResults");
+let searchTimeout = null;
+
+searchInput.addEventListener("input", () => {
+  // Debounce: wait 300ms after user stops typing before searching
+  clearTimeout(searchTimeout);
+  const searchQuery = searchInput.value.trim();
+
+  if (!searchQuery) {
+    searchResults.innerHTML = "";
+    searchResults.style.display = "none";
+    return;
+  }
+
+  searchTimeout = setTimeout(() => {
+    if (charities.length === 0) return;
+
+    const results = searchCharities(searchQuery, charities);
+    searchResults.innerHTML = "";
+
+    if (results.length === 0) {
+      searchResults.style.display = "block";
+      searchResults.innerHTML = '<p class="search-empty">No charities found matching your search.</p>';
+      return;
+    }
+
+    searchResults.style.display = "grid";
+    // Show top 5 search results
+    results.slice(0, 5).forEach(c => {
+      const card = document.createElement("div");
+      card.className = "charity-card";
+      card.innerHTML = `
+        <h3>${c.name}</h3>
+        <p>${c.mission}</p>
+        <a href="${c.url}" target="_blank" rel="noopener" class="charity-link">${c.url}</a>
+        <button type="button" class="btn-save">Add to My Charities</button>
+      `;
+
+      const btn = card.querySelector(".btn-save");
+      btn.addEventListener("click", () => {
+        if (btn.classList.contains("saved")) return;
+        saveCharityToFirestore({ name: c.name, mission: c.mission, url: c.url, id: c.id });
+        btn.classList.add("saved");
+        btn.textContent = "Saved ✓";
+      });
+
+      searchResults.appendChild(card);
+    });
+  }, 300);
 });
