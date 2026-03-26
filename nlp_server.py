@@ -29,27 +29,27 @@ def get_similarity(source_sentence, sentences):
     return response.json()
 
 
-def weighted_similarity(keywords, mission):
-    """Compute weighted average similarity between ranked keywords and a mission.
+def weighted_similarity_single(keywords, mission):
+    """Compute similarity for a single mission using combined + ranking boost.
 
-    Each keyword is scored individually against the mission, then combined
-    using position-based weights so higher-ranked values count more.
+    Scores the combined keywords against the mission for a strong base score,
+    then adds a boost from the top-ranked keyword so ranking affects results.
     """
     if not keywords or not mission:
         return 0.0
 
-    total_weight = sum(k["weight"] for k in keywords)
-    if total_weight == 0:
-        return 0.0
+    # Base score: all keywords combined (produces higher similarity)
+    combined_text = " ".join(k["word"] for k in keywords)
+    base_scores = get_similarity(combined_text, [mission])
+    base = float(base_scores[0]) if isinstance(base_scores, list) and len(base_scores) > 0 else 0.0
 
-    weighted_sum = 0.0
-    for kw in keywords:
-        # Score each keyword individually against the mission
-        scores = get_similarity(kw["word"], [mission])
-        score = scores[0] if isinstance(scores, list) and len(scores) > 0 else 0.0
-        weighted_sum += kw["weight"] * float(score)
+    # Ranking boost: score the top-ranked keyword individually
+    top_kw = max(keywords, key=lambda k: k["weight"])
+    top_scores = get_similarity(top_kw["word"], [mission])
+    top = float(top_scores[0]) if isinstance(top_scores, list) and len(top_scores) > 0 else 0.0
 
-    return weighted_sum / total_weight
+    # Blend: 75% combined base + 25% top keyword boost
+    return 0.75 * base + 0.25 * top
 
 
 @app.route("/similarity", methods=["POST"])
@@ -71,7 +71,7 @@ def similarity():
             score = scores[0] if isinstance(scores, list) and len(scores) > 0 else 0.0
             return jsonify({"similarity": float(score)})
         else:
-            score = weighted_similarity(keywords, mission)
+            score = weighted_similarity_single(keywords, mission)
             return jsonify({"similarity": score})
     except Exception as e:
         print(f"HF API error: {e}")
@@ -82,8 +82,9 @@ def similarity():
 def batch_similarity():
     """Calculate weighted similarity for multiple missions in one request.
 
-    Accepts all charity missions at once and returns a score for each,
-    avoiding 100 separate round-trip requests from the frontend.
+    Uses only 2 HF API calls total: one for the combined keywords against
+    all missions, and one for the top-ranked keyword against all missions.
+    The scores are blended so ranking position affects results.
     """
     data = flask_request.get_json()
 
@@ -94,10 +95,23 @@ def batch_similarity():
         return jsonify({"scores": [0.0] * len(missions)})
 
     try:
-        scores = []
-        for mission in missions:
-            score = weighted_similarity(keywords, mission)
-            scores.append(score)
+        # Call 1: combined keywords vs all missions (strong base scores)
+        combined_text = " ".join(k["word"] for k in keywords)
+        base_scores = get_similarity(combined_text, missions)
+        if not isinstance(base_scores, list):
+            base_scores = [0.0] * len(missions)
+
+        # Call 2: top-ranked keyword vs all missions (ranking boost)
+        top_kw = max(keywords, key=lambda k: k["weight"])
+        top_scores = get_similarity(top_kw["word"], missions)
+        if not isinstance(top_scores, list):
+            top_scores = [0.0] * len(missions)
+
+        # Blend: 75% combined base + 25% top keyword boost
+        scores = [
+            0.75 * float(base_scores[i]) + 0.25 * float(top_scores[i])
+            for i in range(len(missions))
+        ]
         return jsonify({"scores": scores})
     except Exception as e:
         print(f"HF API error: {e}")
